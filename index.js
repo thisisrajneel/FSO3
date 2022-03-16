@@ -31,6 +31,10 @@ let persons = [
     }
 ]
 
+app.get('/', (req,res) => {
+    res.send('<h1>Hello World</h1>')
+})
+
 app.get('/api/persons', (req, res) => {
     res.json(persons)
 })
@@ -38,7 +42,12 @@ app.get('/api/persons', (req, res) => {
 app.get('/api/persons/:id', (req, res) => {
     const id = Number(req.params.id)
     const found = persons.find(person => person.id === id)
-    res.json(found)
+    if(found) {
+        res.json(found)
+    }
+    else {
+        res.status(404).end()
+    }
 })
 
 const generateId = () => {
