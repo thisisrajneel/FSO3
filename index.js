@@ -1,13 +1,28 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
-
+const Person = require('./models/person')
+const req = require('express/lib/request')
 const app = express()
+
 app.use(express.json())
 app.use(cors())
 app.use(express.static('build'))
 morgan.token('body', (req, res) => JSON.stringify(req.body))
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
+
+const errorHandler = (error, req, res, next) => {
+    console.error(error.message);
+
+    if(error.name === 'CastError') {
+        res.status(400).send({ error: 'Malformated entry' })
+    }
+
+    next(error)
+}
+
+app.use(errorHandler)
 
 let persons = [
     { 
@@ -37,25 +52,18 @@ app.get('/', (req,res) => {
 })
 
 app.get('/api/persons', (req, res) => {
-    res.json(persons)
+    Person.find({}).then(people => {
+        res.json(people)
+    })
+    .catch(error => next(error))
 })
 
 app.get('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    const found = persons.find(person => person.id === id)
-    if(found) {
-        res.json(found)
-    }
-    else {
-        res.status(404).end()
-    }
+    Person.findById(req.params.id).then(person => {
+        res.json(person)
+    })
+    .catch(error => next(error))
 })
-
-const generateId = () => {
-    let num = Math.random()*1000000
-    num = Math.floor(num)
-    return num
-}
 
 app.post('/api/persons', (req, res) => {
     if(!req.body.name) {
@@ -68,26 +76,38 @@ app.post('/api/persons', (req, res) => {
             error: "Number missing."
         })
     }
-    else if( persons.find( p => p.name === req.body.name )) {
-        return res.status(404).json({
-            error:"Name must be unique"
+    else {
+        const person = new Person({
+            name: req.body.name,
+            number: req.body.number
         })
+
+        person.save().then(savedPerson => {
+            res.json(savedPerson)
+        })
+        .catch(error => next(error))
     }
-    
-    const person = {
-        "id": generateId(),
-        "name": req.body.name,
-        "number": req.body.number
-    }
-    console.log(person);
-    persons = persons.concat(person)
-    res.json(person)
 })
 
 app.delete('/api/persons/:id', (req, res) => {
-    const id  = Number(req.params.id)
-    persons = persons.filter(person => person.id !== id)
-    res.status(204).end()
+    Person.findByIdAndRemove(req.params.id)
+            .then(deletedPerson => {
+                res.json(deletedPerson)
+            })
+            .catch(error => next(error))
+})
+
+app.put('/api/persons/:id', (req, res) => {
+    const person = {
+        name: req.body.name,
+        number: req.body.number
+    }
+
+    Person.findByIdAndUpdate(req.params.id, person, { new: true })
+            .then(updatedPerson => {
+                res.json(updatedPerson)
+            })
+            .catch(error => next(error))
 })
 
 // INCOMPLETE
