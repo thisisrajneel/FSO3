@@ -3,6 +3,7 @@ const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
 const Person = require('./models/person')
+const req = require('express/lib/request')
 const app = express()
 
 app.use(express.json())
@@ -92,6 +93,19 @@ app.delete('/api/persons/:id', (req, res) => {
     Person.findByIdAndRemove(req.params.id)
             .then(deletedPerson => {
                 res.json(deletedPerson)
+            })
+            .catch(error => next(error))
+})
+
+app.put('/api/persons/:id', (req, res) => {
+    const person = {
+        name: req.body.name,
+        number: req.body.number
+    }
+
+    Person.findByIdAndUpdate(req.params.id, person, { new: true })
+            .then(updatedPerson => {
+                res.json(updatedPerson)
             })
             .catch(error => next(error))
 })
