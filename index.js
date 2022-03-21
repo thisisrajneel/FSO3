@@ -11,6 +11,18 @@ app.use(express.static('build'))
 morgan.token('body', (req, res) => JSON.stringify(req.body))
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
+const errorHandler = (error, req, res, next) => {
+    console.error(error.message);
+
+    if(error.name === 'CastError') {
+        res.status(400).send({ error: 'Malformated entry' })
+    }
+
+    next(error)
+}
+
+app.use(errorHandler)
+
 let persons = [
     { 
       "id": 1,
@@ -42,19 +54,15 @@ app.get('/api/persons', (req, res) => {
     Person.find({}).then(people => {
         res.json(people)
     })
+    .catch(error => next(error))
 })
 
 app.get('/api/persons/:id', (req, res) => {
     Person.findById(req.params.id).then(person => {
         res.json(person)
     })
+    .catch(error => next(error))
 })
-
-const generateId = () => {
-    let num = Math.random()*1000000
-    num = Math.floor(num)
-    return num
-}
 
 app.post('/api/persons', (req, res) => {
     if(!req.body.name) {
@@ -76,6 +84,7 @@ app.post('/api/persons', (req, res) => {
         person.save().then(savedPerson => {
             res.json(savedPerson)
         })
+        .catch(error => next(error))
     }
 })
 
@@ -84,6 +93,7 @@ app.delete('/api/persons/:id', (req, res) => {
             .then(deletedPerson => {
                 res.json(deletedPerson)
             })
+            .catch(error => next(error))
 })
 
 // INCOMPLETE
