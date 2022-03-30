@@ -18,8 +18,19 @@ const personSchema = new mongoose.Schema({
         required: true
     },
     number: {
-        type: Number,
-        required: true
+        type: String,
+        required: true,
+        validate: {
+            validator: (num) => {
+                if(!num.includes('-')) {
+                    return (num.length > 7)
+                }
+                else {
+                    const [a,b] = num.split('-')
+                    return (a.length <= 3 && a.length >= 2 && parseInt(b))
+                }
+            }
+        }
     }
 })
 
